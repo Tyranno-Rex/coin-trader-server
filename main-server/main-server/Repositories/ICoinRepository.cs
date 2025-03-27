@@ -8,6 +8,7 @@ namespace coin_trader.Repositories
         Task<Coin> GetCoinByIdAsync(int coinId);
         Task<Coin> GetCoinByNameAsync(string name);
         Task<Coin> CreateCoinAsync(Coin coin);
-        Task<Boolean> DeleteCoinAsync(int coinId);
+        Task<bool> DeleteCoinAsync(int coinId);
+        Task<CoinTransaction> CreateCoinTransactionAsync(CoinTransaction coinTransaction);
     }
 }

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "main-server", "coin-trader\main-server.csproj", "{EA1AF0AD-83B9-4C6F-9D4D-296544D82A1F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "main-server", "main-server\main-server.csproj", "{EA1AF0AD-83B9-4C6F-9D4D-296544D82A1F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -150,6 +150,15 @@ namespace coin_trader.Services
             });
 
             await _userRepository.UpdateCoinWalletAsync(coinWallet);
+            await _coinRepository.CreateCoinTransactionAsync(new CoinTransaction
+            {
+                UserId = purchaseCoinDTO.UserId,
+                CoinName = purchaseCoinDTO.CoinName,
+                Type = "purchase",
+                Amount = purchaseCoinDTO.Amount,
+                Price = coinValue,
+                CreatedAt = DateTime.Now
+            });
 
             return coinWallet;
         }
@@ -192,6 +201,15 @@ namespace coin_trader.Services
             }
 
             await _userRepository.UpdateCoinWalletAsync(coinWallet);
+            await _coinRepository.CreateCoinTransactionAsync(new CoinTransaction
+            {
+                UserId = sellCoinDTO.UserId,
+                CoinName = sellCoinDTO.CoinName,
+                Type = "sell",
+                Amount = coinSellAmount,
+                Price = coinValue,
+                CreatedAt = DateTime.Now
+            });
             return coinWallet;
         }
     }

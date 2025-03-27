@@ -38,5 +38,12 @@ namespace coin_trader.Repositories
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<CoinTransaction> CreateCoinTransactionAsync(CoinTransaction coinTransaction)
+        {
+            _context.CoinTransactions.Add(coinTransaction);
+            await _context.SaveChangesAsync();
+            return coinTransaction;
+        }
     }
 }

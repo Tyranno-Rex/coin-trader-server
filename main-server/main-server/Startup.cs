@@ -42,6 +42,14 @@ namespace coin_trader
                 }
             });
 
+            // Billing Server와 통신하기 위한 HttpClient 등록
+            services.AddHttpClient("BillingServer", client =>
+            {
+                client.BaseAddress = new System.Uri("https://localhost:35771/api/v1/coin/");
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            });
+
             services.AddDbContext<coin_trader_context>(options =>
                 options.UseMySql(Configuration.GetConnectionString("DefaultConnection"), new MySqlServerVersion(new System.Version(8, 0, 40))));
 

@@ -11,7 +11,6 @@ using coin_trader.Models.DTO;
 using System.Formats.Asn1;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
 
 namespace coin_trader.Services
 {
@@ -129,39 +128,88 @@ namespace coin_trader.Services
 
         public async Task<CoinWallet> PurchaseCoinAsync(PurchaseCoinDTO purchaseCoinDTO)
         {
-            // Billing Server와 통신해서 처리하는 방식으로 수정함.
-
-            var client = _httpClientFactory.CreateClient("BillingServer");
-            string requestUri = "purchase";
-            string json = JsonSerializer.Serialize(purchaseCoinDTO);
-
-            HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
-            HttpResponseMessage response = await client.PostAsync(requestUri, content);
-
-            if (!response.IsSuccessStatusCode)
+            CoinWallet coinWallet = await _userRepository.GetCoinWalletByUserIdAsync(purchaseCoinDTO.UserId);
+            if (coinWallet == null)
             {
-                throw new Exception("코인 구매에 실패했습니다.");
+                throw new Exception("지갑이 존재하지 않습니다.");
             }
 
-            CoinWallet coinWallet = await _userRepository.GetCoinWalletByUserIdAsync(purchaseCoinDTO.UserId);
+            decimal coinValue = await GetCoinValueByNameAsync(purchaseCoinDTO.CoinName);
+            decimal totalPrice = coinValue * purchaseCoinDTO.Amount;
+            if (coinWallet.CoinWalletCash < totalPrice)
+            {
+                throw new Exception("잔액이 부족합니다.");
+            }
+
+            coinWallet.CoinWalletCash -= totalPrice;
+            coinWallet.Coins.Add(new Coin
+            {
+                CoinName = purchaseCoinDTO.CoinName,
+                CoinAmount = purchaseCoinDTO.Amount,
+                CoinPrice = coinValue
+            });
+
+            await _userRepository.UpdateCoinWalletAsync(coinWallet);
+            await _coinRepository.CreateCoinTransactionAsync(new CoinTransaction
+            {
+                UserId = purchaseCoinDTO.UserId,
+                CoinName = purchaseCoinDTO.CoinName,
+                Type = "purchase",
+                Amount = purchaseCoinDTO.Amount,
+                Price = coinValue,
+                CreatedAt = DateTime.Now
+            });
+
             return coinWallet;
         }
 
         public async Task<CoinWallet> SellCoinAsync(SellCoinDTO sellCoinDTO)
         {
-            var client = _httpClientFactory.CreateClient("BillingServer");
-            string requestUri = "sell";
-            string json = JsonSerializer.Serialize(sellCoinDTO);
-
-            HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
-            HttpResponseMessage response = await client.PostAsync(requestUri, content);
-
-            if (!response.IsSuccessStatusCode)
+            CoinWallet coinWallet = await _userRepository.GetCoinWalletByUserIdAsync(sellCoinDTO.UserId);
+            if (coinWallet == null)
             {
-                throw new Exception("코인 판매에 실패했습니다.");
+                throw new Exception("지갑이 존재하지 않습니다.");
+            }
+            List<Coin> coins = coinWallet.Coins;
+            Coin coin = coins.FirstOrDefault(c => c.CoinName == sellCoinDTO.CoinName);
+
+            if (coin == null)
+            {
+                throw new Exception("해당 코인을 보유하고 있지 않습니다.");
+            }
+            
+            decimal coinHaveAmount = coin.CoinAmount;
+            decimal coinSellAmount = sellCoinDTO.Amount;
+
+            if (coinHaveAmount < coinSellAmount)
+            {
+                throw new Exception("보유한 코인의 양이 부족합니다.");
             }
 
-            CoinWallet coinWallet = await _userRepository.GetCoinWalletByUserIdAsync(sellCoinDTO.UserId);
+            // 전달 받은 amount는 코인의 가격이 아닌 판매할 코인의 양
+            decimal coinValue = await GetCoinValueByNameAsync(sellCoinDTO.CoinName);
+            decimal totalPrice = coinValue * coinSellAmount;
+
+
+            coinWallet.CoinWalletCash += totalPrice;
+            coin.CoinAmount -= coinSellAmount;
+
+            if (coin.CoinAmount == 0)
+            {
+                coinWallet.Coins.Remove(coin);
+                await _coinRepository.DeleteCoinAsync(coin.CoinId);
+            }
+
+            await _userRepository.UpdateCoinWalletAsync(coinWallet);
+            await _coinRepository.CreateCoinTransactionAsync(new CoinTransaction
+            {
+                UserId = sellCoinDTO.UserId,
+                CoinName = sellCoinDTO.CoinName,
+                Type = "sell",
+                Amount = coinSellAmount,
+                Price = coinValue,
+                CreatedAt = DateTime.Now
+            });
             return coinWallet;
         }
     }
